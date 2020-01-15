@@ -116,9 +116,11 @@ class MyApp:
         filemenu.add_command(label='Uložit herní pole', command=self.save_template)
         filemenu.add_command(label='Načíst herní pole', command=self.load_template)
 
+        # Přepínač -> další vlna automaticky po předchozí
     def auto_new_wave(self):
         self.auto_wave = True if not self.auto_wave else False
 
+        # Načtení mapy ze souboru
     def load_template(self):
         self.breakloop = True
         self.file = askopenfile(mode="r", initialdir="./templates/", title="Vyber soubor", filetypes=(("PythonTowerDefense Template", "*.temp"), ("Všechny soubory", "*.*")))
@@ -131,12 +133,14 @@ class MyApp:
         self.file = None
         self.create_game()
 
+        # Uložení vytvořené mapy do souboru (není co a jak vyrábět, ale funguje)
     def save_template(self):
         self.file = asksaveasfile(mode="w", defaultextension=".temp", initialdir="./templates/", title="Uložit soubor")
         self.file.write(dumps(self.template))
         self.file.close()
         self.file = None
 
+        # Vytvoří vlnu nepřátel a nastaví jim životy a rychlost
     def create_wave(self):
         #root.after(2000, self.create_wave, self)
         if self.phase != "wave":
@@ -150,6 +154,7 @@ class MyApp:
                 speed = 30
             self.create_enemy(hp, speed)
 
+        # Doopravdy přidá nepřítele na začátek
     def add_enemy(self, hp, speed):
         if self.phase == "wave":
             self.enemy = Enemy(self.enemy_start_x, self.enemy_start_y, hp, speed)
@@ -159,6 +164,7 @@ class MyApp:
             self.enemies.insert(0, self.enemy)
             self.create_enemy(hp, speed)
 
+        # Vytvoří nepřítele po intervalu self.delay_between_spawn
     def create_enemy(self, hp, speed):
         if self.current_wave > 0:
             self.current_wave -= 1
@@ -169,6 +175,7 @@ class MyApp:
         else:
             self.phase = "shopping"
 
+        # Kontrola, jestli nějaká střela trefila nepřítele
     def bullet_hit_enemy(self, bullet):
         for i, enemy in enumerate(self.enemies):
 
@@ -177,7 +184,7 @@ class MyApp:
             dy = point.y - bullet.y
             dist = sqrt(pow(dx, 2) + pow(dy, 2))
             if (enemy not in bullet.enemies_hit or bullet.turret_type == "fast") and dist < (DEFAULT_CONFIG["enemy_size"] + bullet.side) / 2 and bullet.hits > 0:
-                if bullet.immortal == False:
+                if not bullet.immortal:
                     bullet.hits -= 1
                 print(bullet.hits)
                 print("\n\n\n\n\n")
@@ -185,9 +192,11 @@ class MyApp:
                 self.enemies[i].hp -= bullet.damage
                 print("Enemy hit appended: {}\n".format(bullet.enemies_hit))
 
+        # Přepínač -> Cíl věže (jestli střílí po prvním / posledním nepříteli, který se nachází v dosahu)
     def change_target_mode(self):
         self.turret.target_mode = "first" if self.turret.target_mode == "last" else "last"
 
+        # Přidá všechny nepřátele, kteří se nachází v dosahu, do listu
     def append_turrets_in_range(self, enemy, turret):
         x = enemy.x
         y = enemy.y
@@ -197,6 +206,7 @@ class MyApp:
         if dis < turret.range:
             turret.in_range.append(enemy)
 
+        # Útok věže - nastavení směru střely a vytvoření střely
     def turret_attack(self, turret):
         if turret.loaded == 1:
             turret.in_range = []
@@ -234,6 +244,7 @@ class MyApp:
         else:
             self.bullet = None
 
+        # Hlavní smyčka
     def loop(self):
         for enemy in self.enemies:
             enemy.set_passed()
@@ -246,12 +257,12 @@ class MyApp:
                 self.enemies.remove(enemy)
         if len(self.enemies) == 0 and self.auto_wave:
             self.create_wave()
-            #self.phase = "shopping"
-
+        # -----
         for turret in self.turrets:
             self.turret_attack(turret)
             if self.bullet:
                 self.bullets.append(self.bullet)
+        # -----
         for bullet in self.bullets:
             bullet.move()
             bullet.is_destroyed()
@@ -260,6 +271,7 @@ class MyApp:
             if bullet.destroyed:
                 self.bullets.remove(bullet)
                 print(self.bullets)
+        # -----
         self.redraw_canvas()
         if self.hp > 0:
             if not self.breakloop:
@@ -267,10 +279,12 @@ class MyApp:
         else:
             self.end_game_dialog()
 
+        # Odstraní z canvasu všechny prvky
     def clear_canvas(self):
         self.canvas.delete("all")
         print("Vyčistit canvas")
 
+        # Překreslí canvas
     def redraw_canvas(self):
         self.clear_canvas()
         for square in self.squares:
@@ -298,6 +312,7 @@ class MyApp:
                                 text="Další vlna automaticky - {}".format("ON" if self.auto_wave else "OFF"))
         print("Překreslit canvas")
 
+        # Vytvoření hry na začátku (a restartu) / při importu mapy
     def create_game(self):
         self.set_default()
         for i in range(len(self.template)):
@@ -325,6 +340,7 @@ class MyApp:
         self.breakloop = False
         self.loop()
 
+        # Dialog - nová hra / konec
     def end_game_dialog(self):
         print("Konec hry")
         if askyesno('Konec hry', 'Chcete začít novou hru?'):
@@ -333,12 +349,15 @@ class MyApp:
         else:
             self.parent.destroy()
 
+        # přidá věž "big"
     def turret_add_big(self):
         self.turret_add("big")
 
+        # přidá věž "fast"
     def turret_add_fast(self):
         self.turret_add("fast")
 
+        # Vytvoří věž podle typu
     def turret_add(self, turret_type):
         if self.square and not self.square.path:
             if not self.square.turret_built:
@@ -354,6 +373,7 @@ class MyApp:
                 else:
                     self.turret = None
 
+        # Prodá věž
     def turret_sell(self):
         if self.turret:
             self.turrets.remove(self.turret)
@@ -361,6 +381,7 @@ class MyApp:
             self.square.turret_built = False
             self.turret = None
 
+        # Vylepší věž
     def turret_upgrade(self):
         if self.turret:
             if self.money >= 2 * self.turret.cost:
@@ -369,6 +390,7 @@ class MyApp:
                 self.turret.upgrade()
                 self.turrets.append(self.turret)
 
+        # při kliknutí myši
     def on_button_press(self, event):
         self.start_x = self.canvas.canvasx(event.x)
         self.start_y = self.canvas.canvasy(event.y)
@@ -376,6 +398,7 @@ class MyApp:
         #self.action = ""
         print(event)
         self.square = None
+        # Výběr čtverečku (který není cesta) + změna jeho barvy
         for idx, square in enumerate(self.squares):
             if not square.path and square.fill_color != DEFAULT_CONFIG["fill"]:
                 self.squares[idx].fill_color = DEFAULT_CONFIG["fill"]
@@ -385,20 +408,15 @@ class MyApp:
                     if not square.path:
                         self.square = square
                         self.squares[idx].fill_color = "pink"
-                    # print("Path")
-                    #self.squares[i] = Path(s.x, s.y)
 
-            # if event.num == 3:
-            #print("Build")
-            # self.squares[i] = Build(s.x, s.y)
-            #self.redraw_canvas()
 
+            # Výběr aktuální věže
         self.turret = None
-
         for idx, turret in enumerate(self.turrets):
             if turret.detect_cursor(point) and event.num == 1:
                 self.turret = turret
 
+        # Klávesové zkratky
     def key_press(self, event):
         print (event)
         if event.char == "+":
@@ -418,6 +436,7 @@ class MyApp:
 
 root = Tk()
 #root.attributes("-fullscreen", True)
+root.title("Tower defense")
 root.geometry("{}x{}+0+0".format(DEFAULT_CONFIG["side"] * DEFAULT_CONFIG["cols"], DEFAULT_CONFIG["side"] * (DEFAULT_CONFIG["rows"] + 2)))
 root.resizable(0, 0)
 myapp = MyApp(root)
