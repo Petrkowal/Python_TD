@@ -245,6 +245,8 @@ class Bullet(Square):
 class Enemy(Square):
     def __init__(self, x, y, hp=100, speed=1):
         super().__init__(x, y)
+        self.hp_max = hp
+        self.percentual_hp = 100
         self.hp = hp
         self.speed = speed
         self.vel_x = 1
@@ -260,7 +262,14 @@ class Enemy(Square):
 
         # Vykreslení
     def draw(self, canvas):
+        if self.hp < 0:
+            self.hp = 0
+        self.percentual_hp = (self.hp / self.hp_max) * self.side
         canvas.create_oval(self.x - self.side / 2, self.y - self.side / 2, self.x + self.side / 2, self.y + self.side / 2, fill=self.fill_color, outline=self.outline_color, width=self.outline_width)
+        canvas.create_rectangle(self.x - self.side / 2, self.y + self.side / 2 + 5, self.x + self.side / 2,
+                                self.y + self.side / 2 + 10, fill="red", outline="black", width="2")
+        canvas.create_rectangle(self.x - self.side / 2, self.y + self.side / 2 + 5, self.x - self.side / 2 + self.percentual_hp,
+                                self.y + self.side / 2 + 10, fill="green", outline="")
 
         # pohyb
     def move(self):

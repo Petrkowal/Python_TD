@@ -6,6 +6,7 @@ from objects import *
 from json import dumps
 from ast import literal_eval
 
+
 class MyApp:
     def __init__(self, parent):
         self.color_fg = 'black'
